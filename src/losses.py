@@ -50,9 +50,10 @@ class StyleLoss(nn.Module):
         the `content_weight` parameter.
 
         Args:
-            content_weight (float): The weight of the content loss.
-            style_weight (float): The weight of the style loss.
-            vgg_layers (list): The layers of the VGG-19 model to use. 
+        - enc_depth (List[int]): List of integers representing the
+          backbone layer depth to use as feature encoders.
+        - backbone (str): Torchvision model to use as feature extractor
+        - content_weight (float): The weight of the content loss.
     '''
 
     def __init__(

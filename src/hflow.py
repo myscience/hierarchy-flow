@@ -5,7 +5,7 @@ from .blocks import HierarchyBlock
 
 from typing import List
 from torch import Tensor
-from itertools import pairwise
+from itertools import pairwise, repeat
 
 class HierarchyFlow(nn.Module):
     '''
@@ -20,12 +20,12 @@ class HierarchyFlow(nn.Module):
         feat_channel_mult : List[int] = [3, 3],
         pad_size : int = 10,
         pad_mode : str = 'reflect',
-        style_dim : int = 8,
-        style_kw : dict | None = None,
+        style_out_dim : int = 8,
+        style_conv_kw : dict | None = None,
     ):
         super(HierarchyFlow, self).__init__()
 
-        style_kw = default(style_kw, {'padding' : 0})
+        style_conv_kw = default(style_conv_kw, repeat({'kernel_size' : 3}))
 
         self.inp_channels = inp_channels
         self.flow_channel_mult = flow_channel_mult
@@ -39,18 +39,18 @@ class HierarchyFlow(nn.Module):
                 ReversiblePad2d(pad_size, pad_mode=pad_mode),
                 *[HierarchyBlock(
                     inp_chn, out_chn,
-                    mlp_inp_dim=style_dim)
+                    mlp_inp_dim=style_out_dim)
                 for inp_chn, out_chn in pairwise(flow_channels)]
             ]
         )
 
         self.style_block = nn.Sequential([
             nn.Sequential(
-                nn.Conv2d(inp_chn, out_chn, **style_kw),
+                nn.Conv2d(inp_chn, out_chn, **style),
                 nn.ReLU(),
-            ) for inp_chn, out_chn in zip(feat_channels)],
+            ) for (inp_chn, out_chn), style in zip(feat_channels, style_conv_kw)],
             nn.AdaptiveAvgPool2d(1), # global average pooling
-            nn.Conv2d(feat_channels[-1], style_dim, 1, 1, 0)
+            nn.Conv2d(feat_channels[-1], style_out_dim, 1, 1, 0)
         )
 
     def forward(
