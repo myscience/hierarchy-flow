@@ -10,7 +10,7 @@ The authors release their official implementation which can be found [here](http
 import torch
 from src.hflow import HierarchicalFlow
 
-flow = HierarchicalFlow(
+flow = HierarchyFlow(
     inp_channels=3,
     out_channels=[30, 120],
     pad_size=10,
