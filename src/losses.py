@@ -58,7 +58,7 @@ class StyleLoss(nn.Module):
 
     def __init__(
         self,
-        enc_depth : List[int] = (3, 10, 17, 30),
+        enc_depth : List[int] = (5, 12, 19, 32),
         backbone : str = 'vgg19_bn',
         content_weight : float = .8,
     ) -> None:

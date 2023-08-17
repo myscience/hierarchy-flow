@@ -23,13 +23,11 @@ class FeatureRecorder:
         self.feats = {l : [] for l in names}
         
     def __call__(self, module : nn.Module, inp : Tensor, out : Tensor) -> None:
-        # Detach layer output from PyTorch graph
-        data = out.detach()
-
         # Get the module name
         layer = module.name
 
-        self.feats[layer].append(data)
+        # NOTE: It's important NOT to detach output from grad graph
+        self.feats[layer].append(out)
 
     def clean(
         self,

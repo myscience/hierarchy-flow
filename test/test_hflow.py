@@ -1,7 +1,10 @@
 import torch
 import unittest
 
+from torch import Tensor
+
 from src.hflow import HierarchyFlow
+from src.losses import StyleLoss
 
 class HFlowTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -19,6 +22,11 @@ class HFlowTest(unittest.TestCase):
             ]
         )
 
+        self.criterion = StyleLoss(
+            enc_depth=(5, 12, 19, 32),
+            backbone='vgg19_bn',
+        )
+
         # Create a dummy input of correct shape
         self.input_shape = (2, 3, 256, 256)
 
@@ -30,3 +38,14 @@ class HFlowTest(unittest.TestCase):
         
         # Check the output shape
         self.assertEqual(output.shape, self.input_shape)
+
+    def test_loss_backward(self):
+        pred_img = self.flow(self.dummy_subj, self.dummy_style)
+        
+        loss : Tensor = self.criterion(self.dummy_subj, self.dummy_style, pred_img)
+
+        loss.backward()
+
+        # Check the output shape
+        self.assertTrue(loss > 0)
+
