@@ -37,10 +37,10 @@ class ReversibleConcat(nn.Module):
     '''
     '''
 
-    def __init__(self, cat_dim : int = 0) -> None:
+    def __init__(self, dim : int = 0) -> None:
         super().__init__()
 
-        self.dim = cat_dim
+        self.dim = dim
 
     def forward(self, inp : Tensor) -> Tensor:
         return torch.cat(inp, dim=self.dim)
@@ -54,16 +54,16 @@ class ReversiblePad2d(nn.Module):
         This is a reversible Pad layer.
     '''
 
-    def __init__(self, pad_size : int = 10, mode = 'reflect') -> None:
+    def __init__(self, pad_size : int = 10, pad_mode = 'reflect') -> None:
         super().__init__()
 
         self.pad_size = pad_size
 
-        match mode:
+        match pad_mode:
             case 'reflect':
                 self.padding = nn.ReflectionPad2d(pad_size)
             case _:
-                raise ValueError(f'Unknown pad mode {mode}.')
+                raise ValueError(f'Unknown pad mode {pad_mode}.')
 
     def forward(self, x : Tensor) -> Tensor:
         return self.padding(x)

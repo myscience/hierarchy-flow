@@ -10,7 +10,7 @@ from typing import List
 from einops import rearrange
 from itertools import pairwise
 
-class MLP(nn.Module):
+class StyleMLP(nn.Module):
     '''
         Basic Multi-Layer Perceptron.
     '''
@@ -48,7 +48,10 @@ class MLP(nn.Module):
         )
 
     def forward(self, inp : Tensor) -> Tensor:
-        return self.layers(inp)
+        inp = rearrange(inp, 'b ... -> b (...)')
+        out = self.layers(inp)
+
+        return rearrange(out, 'b c -> b c 1 1')
 
 class HierarchyBlock(nn.Module):
     '''
@@ -70,7 +73,7 @@ class HierarchyBlock(nn.Module):
         self.out_channel = out_channel
 
         hid_channel = inp_channel * channel_mult
-        self.alpha = nn.Parameter(reverse_fact, requires_grad=True)
+        self.alpha = nn.Parameter(torch.tensor(reverse_fact), requires_grad=True)
 
         # Network used in forward pass
         self.affine = nn.Sequential(
@@ -84,11 +87,11 @@ class HierarchyBlock(nn.Module):
             nn.ReLU(),
         )
 
-        self.proj_out = ReversibleConcat()
+        self.proj_out = ReversibleConcat(dim=1)
 
         # Networks used in reverse pass to in-paint style
         self.ada = AdaIN()
-        self.mlp = MLP(
+        self.mlp = StyleMLP(
             inp_dim=mlp_inp_dim,
             hid_dim=[out_channel * 3] * mlp_n_layer,
             # The x2 in out_dim is because we predict
@@ -126,8 +129,8 @@ class HierarchyBlock(nn.Module):
         # Use AdaIN to in-paint target style
         subj = self.ada(subj, mean, std)
 
-        feat, *feats = rearrange(self.feat, 'b (n c) h w -> n b c h w', c = c)[::-1]
-        inp,  *inps  = rearrange(subj,      'b (n c) h w -> n b c h w', c = c)[::-1]
+        feat, *feats = rearrange(self.feat, 'b (n c) h w -> n b c h w', c = c).flipud()
+        inp,  *inps  = rearrange(subj,      'b (n c) h w -> n b c h w', c = c).flipud()
 
         outs = [inp + feat]
         for feat, inp in zip(feats, inps):

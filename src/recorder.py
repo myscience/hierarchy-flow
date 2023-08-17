@@ -1,4 +1,5 @@
 
+import torch
 import torch.nn as nn
 from torch import Tensor
 
@@ -56,18 +57,18 @@ class Traced(nn.Module):
         # Get the list of layers to be traced
         self.layers = [l for depth, l in enumerate(flatten(module)) if depth in depths]
 
-        for layer, name in zip(self.layers, self.names): layer.name = name
-
         # Initialize the feature recorder
         self.names = [f'enc_{d}' for d in depths]
         self.recorder = FeatureRecorder(self.names)
+
+        for layer, name in zip(self.layers, self.names): layer.name = name
 
         # Register the forward hooks for each layered targeted as 'traced'
         self.hook_handles = [l.register_forward_hook(self.recorder) for l in self.layers]
     
     @property
     def features(self) -> List[Tensor]:
-        return [self.recorder.feats[k] for k in self.names]
+        return [torch.cat(self.recorder.feats[k], dim=0) for k in self.names]
 
     def forward(self, inp : Tensor, auto_clean : bool = True) -> List[Tensor]:
         # Propagate the input into the network
@@ -80,10 +81,11 @@ class Traced(nn.Module):
 
         return feats
 
-    def clean(self) -> None:
+    def clean(self, detach : bool = False) -> None:
         self.recorder.clean()
 
-        for h in self.hook_handles: h.remove()
+        if detach:
+            for h in self.hook_handles: h.remove()
 
     def __str__(self) -> str:
         msg = 'Tracing module: \n'
